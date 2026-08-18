@@ -32,19 +32,17 @@ following RTL modules:
 ## Repository Structure
 
 .
-├── designs/
-│ └── riscv_core/
-│ ├── config.json # OpenLane flow configuration
-│ ├── src/ # RTL sources (SystemVerilog)
-│ │ ├── riscv_core.sv
-│ │ ├── control.sv
-│ │ ├── datapath.sv
-│ │ ├── alu.sv
-│ │ ├── regfile.sv
-│ │ ├── pc.sv
-│ │ ├── imem.sv
-│ │ └── dmem.sv
-│ └── runs/ # OpenLane run artifacts (logs, reports, results)
+├── config.json # OpenLane flow configuration
+├── src/ # RTL sources (SystemVerilog)
+│ ├── riscv_core.sv
+│ ├── control.sv
+│ ├── datapath.sv
+│ ├── alu.sv
+│ ├── regfile.sv
+│ ├── pc.sv
+│ ├── imem.sv
+│ └── dmem.sv
+├── riscv_core.gds # Final signed-off GDSII layout
 ├── klayout_gds_file_screenshot.png
 └── README.md
 
@@ -61,31 +59,25 @@ off end-to-end using OpenLane targeting the SkyWater 130nm PDK.
 
 Signoff summary for the final completed run:
 
-| Metric                            | Result                  |
-|-------------------------------------|--------------------------|
-| DRC violations                    | 0                        |
-| LVS errors                        | 0                        |
-| Antenna violations                | 0                        |
-| Setup violations                  | 0                        |
-| Hold violations                   | 0                        |
-| Post-synthesis standard cells     | ~8,800                   |
-| Core area                         | ~0.97 mm²                |
-| Critical path                     | 9.08 ns (constraint: 20 ns) |
-
-Full per-run metrics are available in each run's `reports/metrics.csv`.
-
-> **Note:** Remaining `max fanout` warnings are confined to clock-tree buffer
-> leaves inserted by TritonCTS and do not affect timing closure
-> (WNS / TNS = 0 across all corners).
+| Metric                            | Result                       |
+|-------------------------------------|-------------------------------|
+| DRC violations                    | 0                             |
+| LVS errors                        | 0                             |
+| Antenna violations                | 2 (residual, non-blocking)    |
+| Setup violations                  | 0                             |
+| Hold violations                   | 0                             |
+| Post-synthesis standard cells     | ~8,800                        |
+| Core area                         | ~0.97 mm²                     |
+| Critical path                     | 9.08 ns (constraint: 20 ns)   |
 
 ## Reproducing the Flow
 
 This design targets [OpenLane](https://github.com/The-OpenROAD-Project/OpenLane)
 v1.0.2 with the SKY130 PDK installed via
-[ciel](https://github.com/fossi-foundation/ciel).
+[ciel](https://github.com/fossi-foundation/ciel). Place `config.json` and
+`src/` under `designs/riscv_core/` inside an OpenLane checkout, then:
 
 ```bash
-# From the OpenLane root directory
 make mount
 ```
 
@@ -94,8 +86,6 @@ Inside the container:
 ```bash
 ./flow.tcl -design riscv_core
 ```
-
-Results are written to `designs/riscv_core/runs/<timestamp>/`.
 
 ## Known Limitations
 

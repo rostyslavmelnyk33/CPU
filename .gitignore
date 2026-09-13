@@ -1,0 +1,8 @@
+.dvt/
+dvt_build.log
+tests/__pycache__/
+tests/results.xml
+tests/sim_build/
+.agents/
+.claude/
+.cursor/

@@ -1,60 +1,43 @@
-"""
-Top-level Cocotb testbench for the single-cycle RV32I core (src/riscv_core.sv).
-
-The instruction memory (src/imem.sv) is hardcoded with a small program that
-computes the 10th Fibonacci number using registers x2 (loop counter),
-x3 (F_n) and x4 (F_n+1), then parks the core in a self-loop (beq x0, x0, 0).
-
-This test:
-  1. Drives a free-running clock on `clk`.
-  2. Applies an initial asynchronous, active-low reset on `rst_n`.
-  3. Lets the core run for at least 100 clock cycles (the Fibonacci loop
-     itself completes in ~53 cycles, so 100 cycles leaves plenty of margin
-     for the core to settle into its terminal self-loop).
-  4. Reaches into the register file through the datapath hierarchy
-     (riscv_core -> u_datapath -> u_regfile -> regs[3]) and checks that
-     x3 holds 55.
-"""
-
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
-CLOCK_PERIOD_NS = 10
-RESET_CYCLES = 5
-RUN_CYCLES = 100
-EXPECTED_X3 = 55
-
+async def run_program(dut, cycles=25):
+    """Допоміжна функція: генерує Clock, скидає процесор і чекає виконання програми"""
+    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, cycles)
+    return dut.u_datapath.u_regfile
 
 @cocotb.test()
-async def test_riscv_core_x3_fibonacci(dut):
-    """Run the core and confirm x3 ends up holding the 10th Fibonacci number."""
+async def test_01_basic_alu(dut):
+    """Перевірка ADDI, ADD, SUB"""
+    regfile = await run_program(dut)
+    assert int(regfile.regs[1].value) == 15, "Помилка ADDI (x1)"
+    assert int(regfile.regs[2].value) == 10, "Помилка ADDI (x2)"
+    assert int(regfile.regs[3].value) == 25, "Помилка ADD (x3)"
+    assert int(regfile.regs[4].value) == 5,  "Помилка SUB (x4)"
 
-    # 1. Generate a free-running clock.
-    cocotb.start_soon(Clock(dut.clk, CLOCK_PERIOD_NS, "ns").start())
+@cocotb.test()
+async def test_02_logical_and_shift(dut):
+    """Перевірка AND, OR, XOR, SLL"""
+    regfile = await run_program(dut)
+    assert int(regfile.regs[5].value) == 10,  "Помилка AND (x5)"
+    assert int(regfile.regs[6].value) == 15,  "Помилка OR (x6)"
+    assert int(regfile.regs[7].value) == 5,   "Помилка XOR (x7)"
+    assert int(regfile.regs[8].value) == 320, "Помилка SLL (x8)"
 
-    # 2. Apply an initial reset (active-low, per src/pc.sv).
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, RESET_CYCLES)
-    dut.rst_n.value = 1
+@cocotb.test()
+async def test_03_memory(dut):
+    """Перевірка SW та LW"""
+    regfile = await run_program(dut)
+    assert int(regfile.regs[9].value) == 320, "Помилка LW/SW (x9)"
 
-    # 3. Run for at least 100 clock cycles.
-    await ClockCycles(dut.clk, RUN_CYCLES)
-
-    # 4. Reach into the register file via the datapath hierarchy.
-    regfile = dut.u_datapath.u_regfile
-    x3 = int(regfile.regs[3].value)
-
-    dut._log.info(
-        "After %d cycles: pc=0x%08x  x2=%d  x3=%d  x4=%d",
-        RESET_CYCLES + RUN_CYCLES,
-        int(dut.pc_out.value),
-        int(regfile.regs[2].value),
-        x3,
-        int(regfile.regs[4].value),
-    )
-
-    assert x3 == EXPECTED_X3, (
-        f"Expected register x3 to hold {EXPECTED_X3} "
-        f"(10th Fibonacci number), got {x3} instead"
-    )
+@cocotb.test()
+async def test_04_branching(dut):
+    """Перевірка BEQ та стрибків"""
+    regfile = await run_program(dut)
+    assert int(regfile.regs[10].value) == 0, "Помилка BEQ: інструкція не була пропущена (x10)"
+    assert int(regfile.regs[11].value) == 1, "Помилка BEQ: не перейшли на правильну адресу (x11)"

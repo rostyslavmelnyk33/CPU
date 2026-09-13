@@ -25,7 +25,7 @@ module riscv_core (
     logic        mem_to_reg;
     logic        branch;
     logic [1:0]  imm_src;
-    logic [2:0]  alu_ctrl;
+    logic [3:0]  alu_ctrl; // [2:0]
 
     // Control unit decodes the current instruction.
     control u_control (

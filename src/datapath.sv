@@ -12,7 +12,7 @@ module datapath (
     input  logic        alu_src,
     input  logic        branch,
     input  logic [1:0]  imm_src,
-    input  logic [2:0]  alu_ctrl,
+    input  logic [3:0]  alu_ctrl,
     output logic [31:0] pc,
     output logic [31:0] alu_result,
     output logic [31:0] write_data

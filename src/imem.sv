@@ -56,6 +56,80 @@ module imem (
     integer i;
 
     initial begin
+
+
+        // NOP для порожніх комірок
+    for (i = 0; i < IMEM_WORDS; i++) begin
+        mem[i] = 32'h0000_0013; 
+    end
+
+    // --- КОМПЛЕКСНИЙ ТЕСТ ---
+
+    // 1. Базова арифметика
+    mem[0] = encode_itype(12'sd15, 5'd0, 3'b000, 5'd1, 7'b0010011); // addi x1, x0, 15
+    mem[1] = encode_itype(12'sd10, 5'd0, 3'b000, 5'd2, 7'b0010011); // addi x2, x0, 10
+    mem[2] = encode_rtype(7'b0000000, 5'd2, 5'd1, 3'b000, 5'd3, 7'b0110011); // add x3, x1, x2  (x3 = 25)
+    mem[3] = encode_rtype(7'b0100000, 5'd2, 5'd1, 3'b000, 5'd4, 7'b0110011); // sub x4, x1, x2  (x4 = 5)
+
+    // 2. Логічні операції та зсув
+    mem[4] = encode_rtype(7'b0000000, 5'd2, 5'd1, 3'b111, 5'd5, 7'b0110011); // and x5, x1, x2  (x5 = 10)
+    mem[5] = encode_rtype(7'b0000000, 5'd2, 5'd1, 3'b110, 5'd6, 7'b0110011); // or  x6, x1, x2  (x6 = 15)
+    mem[6] = encode_rtype(7'b0000000, 5'd2, 5'd1, 3'b100, 5'd7, 7'b0110011); // xor x7, x1, x2  (x7 = 5)
+    mem[7] = encode_rtype(7'b0000000, 5'd4, 5'd2, 3'b001, 5'd8, 7'b0110011); // sll x8, x2, x4  (10 << 5 = 320)
+
+    // 3. Пам'ять даних
+    mem[8] = encode_stype(12'sd0, 5'd8, 5'd0, 3'b010, 7'b0100011); // sw x8, 0(x0)  (mem[0] = 320)
+    mem[9] = encode_itype(12'sd0, 5'd0, 3'b010, 5'd9, 7'b0000011); // lw x9, 0(x0)  (x9 = 320)
+
+    // 4. Умовний перехід
+    // Якщо x9 == x8 (320 == 320), стрибаємо на +8 байт (це +2 інструкції, минаючи mem[11])
+    mem[10] = encode_btype(13'sd8, 5'd8, 5'd9, 3'b000, 7'b1100011); // beq x9, x8, +8
+    
+    // Ця інструкція має бути ПРОПУЩЕНА
+    mem[11] = encode_itype(12'sd99, 5'd0, 3'b000, 5'd10, 7'b0010011); // addi x10, x0, 99
+    
+    // Ця інструкція має ВИКОНАТИСЯ (ціль переходу)
+    mem[12] = encode_itype(12'sd1,  5'd0, 3'b000, 5'd11, 7'b0010011); // addi x11, x0, 1
+
+    // 5. Зупинка
+    mem[13] = encode_btype(13'sd0, 5'd0, 5'd0, 3'b000, 7'b1100011); // beq x0, x0, 0
+
+
+
+
+        /* 
+        // Fill unused locations with ADDI x0, x0, 0 (NOP).
+        for (i = 0; i < IMEM_WORDS; i++) begin
+            mem[i] = 32'h0000_0013;
+        end
+
+        // --- PROGRAM: Load/Store & ALU Test ---
+
+        // mem[0]: addi x5, x0, 10 (Записуємо число 10 у регістр x5)
+        mem[0] = encode_itype(12'sd10, 5'd0, 3'b000, 5'd5, 7'b0010011);
+
+        // mem[1]: sw x5, 0(x0) (Зберігаємо значення x5 (10) у пам'ять за адресою 0)
+        mem[1] = encode_stype(12'sd0, 5'd5, 5'd0, 3'b010, 7'b0100011);
+
+        // mem[2]: lw x6, 0(x0) (Читаємо дані з пам'яті за адресою 0 у регістр x6)
+        mem[2] = encode_itype(12'sd0, 5'd0, 3'b010, 5'd6, 7'b0000011);
+
+        // mem[3]: add x7, x5, x6 (x7 = x5 + x6 = 10 + 10 = 20)
+        mem[3] = encode_rtype(7'b0000000, 5'd6, 5'd5, 3'b000, 5'd7, 7'b0110011);
+
+        // mem[4]: sw x7, 4(x0) (Зберігаємо значення x7 (20) у пам'ять за адресою 4)
+        mem[4] = encode_stype(12'sd4, 5'd7, 5'd0, 3'b010, 7'b0100011);
+
+        // mem[5]: beq x0, x0, 0 (Безкінечний цикл для зупинки процесора)
+        mem[5] = encode_btype(13'sd0, 5'd0, 5'd0, 3'b000, 7'b1100011);
+        */
+       
+       
+       
+       
+    
+       
+        /* 
         // Fill unused locations with ADDI x0, x0, 0 (NOP).
         for (i = 0; i < IMEM_WORDS; i++) begin
             mem[i] = 32'h0000_0013;
@@ -96,6 +170,14 @@ module imem (
 
         // mem[8]: beq x0, x0, 0 (Infinite loop to park the processor)
         mem[8] = encode_btype(13'sd0, 5'd0, 5'd0, 3'b000, 7'b1100011);
+        */
+
+
+
+
+
+
+
 
         /*
          // Small demo program:
@@ -118,8 +200,6 @@ module imem (
          mem[7] = encode_itype(12'sd2,   5'd0, 3'b000, 5'd5, 7'b0010011); // addi x5, x0, 2
          mem[8] = encode_btype(13'sd0,   5'd0, 5'd0, 3'b000, 7'b1100011); // beq x0, x0, 0 (self-loop)
          */
-
-
     end
 
     // Combinational instruction fetch.
